@@ -1,0 +1,272 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        96,
+        -144
+      ],
+      "id": "c0acd627-e42d-43a7-8503-60998abec196",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1gQhlDMC05RAKN3QzwVpOxy2VPqeQU8Jp22UlOY1t478",
+          "mode": "list",
+          "cachedResultName": "SumUpDaily - Responses",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gQhlDMC05RAKN3QzwVpOxy2VPqeQU8Jp22UlOY1t478/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 522327474,
+          "mode": "list",
+          "cachedResultName": "Form Responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gQhlDMC05RAKN3QzwVpOxy2VPqeQU8Jp22UlOY1t478/edit#gid=522327474"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        320,
+        -144
+      ],
+      "id": "a85aa200-2995-47bf-bfc3-e949971938dd",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "HVQ16rM1XxI4PFLo",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://newsdata.io/api/1/latest?apikey=pub_c438a1f119944a2ab730ce71a1dc82da&q=top&country=in&category=world,top,business,technology&language=en&timezone=Asia/Kolkata",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        528,
+        -144
+      ],
+      "id": "89f98eb2-f15f-47a7-acee-dbf932085225",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "maxItems": "=5"
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        960,
+        -144
+      ],
+      "id": "c0a45742-9e15-430b-ba69-3e965dd9e87c",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Summarize this news article in 2–3 bullet points in simple language for a daily news digest:\n\nTitle: {{ $json.title }}\nDescription: {{ $json.description }}\nContent: \nReturn only the summary bullet points. Avoid the text \"Here are the summary bullet points:\"\nDisplay the title first followed by the news points. \n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        1152,
+        -144
+      ],
+      "id": "6689d360-84ec-4a3b-b832-295b827397d2",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        64
+      ],
+      "id": "2f944a14-e637-48df-b594-5b741d3b131f",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "mfnaLmcwqGcSMBTy",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "results",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        752,
+        -144
+      ],
+      "id": "ee9c7db3-e7e6-489d-b3cf-9e79959d7834",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "aggregated data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1504,
+        -144
+      ],
+      "id": "f2766990-79b4-489a-b8e8-c30ea9405cb3",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $(\"Get row(s) in sheet\").item.json[\"Email id\"] }}",
+        "subject": "SumUpDaily - Summarized Daily Digest",
+        "message": "=<ol>\n<b style=\"font-size: 20px\">Here’s a personalized summary of today’s top news stories, just for you.</b>\n<br>\n<br>\n{{ $json[\"aggregated data\"].map(item => `\n  <li style=\"margin-bottom: 30px; line-height: 1.6; font-size:15px\">\n    ${item.output.replace(/\\n/g, '<br>')}\n  </li>\n`).join('') }}\n</ol>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1712,
+        -144
+      ],
+      "id": "994c21f1-f15e-4379-bbce-59ec6e625dc5",
+      "name": "Send a message",
+      "webhookId": "1d41c14f-323d-4972-8e1e-fab5d4248733",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "NaAA9bKGghlaEopX",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "751629ae-f309-402b-b1a8-e6bdbaf28a44",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0dcd066bb5d0d1702da58b35c1f5e0e93f07f8535a8db321f80a27e920532156"
+  },
+  "id": "yg9yigOkZu6AEbvN",
+  "tags": []
+}
